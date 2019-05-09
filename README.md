@@ -1,8 +1,8 @@
 ## Bring up a cloud9 IDE and run these prerequisite commands:
 ```
 # Choose your region, and store it in this environment variable
-export AWS_DEFAULT_REGION=ap-southeast-1 
-echo "export AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION >> ~/.bashrc"
+export AWS_DEFAULT_REGION=us-west-2
+echo "export AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION" >> ~/.bashrc
 
 # Install software
 sudo yum -y install jq gettext
@@ -23,6 +23,16 @@ cd ~/environment
 git clone https://github.com/brentley/ecsdemo-frontend.git
 git clone https://github.com/brentley/ecsdemo-nodejs.git
 git clone https://github.com/brentley/ecsdemo-crystal.git
+```
+
+### Ensure service-linked roles exist for LB and ECS:
+
+```
+aws iam get-role --role-name "AWSServiceRoleForElasticLoadBalancing" \
+|| aws iam create-service-linked-role --aws-service-name "elasticloadbalancing.amazonaws.com"
+
+aws iam get-role --role-name "AWSServiceRoleForECS" \
+|| aws iam create-service-linked-role --aws-service-name "ecs.amazonaws.com"
 ```
 
 ## Build a VPC, ECS Cluster, and ALB:
@@ -52,6 +62,14 @@ export security_group=$(aws cloudformation describe-stacks --stack-name fargate-
 
 cd ~/environment
 ```
+
+Alternatively, you can source the `envars` file in your shell:
+
+```
+$ source envvars
+$ cd ~/environment
+```
+
 This creates our infrastructure, and sets several environment variables we will use to
 automate deploys.
 
