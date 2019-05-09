@@ -1,4 +1,4 @@
-## Bring up a cloud9 IDE and run these prerequisite commands:
+## 1. Bring up a cloud9 IDE and run these prerequisite commands:
 ```
 # Choose your region, and store it in this environment variable
 export AWS_DEFAULT_REGION=us-west-2
@@ -11,13 +11,13 @@ sudo chmod +x /usr/local/bin/ecs-cli
 ```
 This installs some handy text parsing utilities, and the latest ecs-cli.
 
-## Clone this demo repository:
+## 2. Clone this demo repository:
 ```
 cd ~/environment
 git clone https://github.com/brentley/fargate-demo.git
 ```
 
-## Clone our application microservice repositories:
+## 3. Clone our application microservice repositories:
 ```
 cd ~/environment
 git clone https://github.com/brentley/ecsdemo-frontend.git
@@ -25,7 +25,7 @@ git clone https://github.com/brentley/ecsdemo-nodejs.git
 git clone https://github.com/brentley/ecsdemo-crystal.git
 ```
 
-### Ensure service-linked roles exist for LB and ECS:
+### 4. Ensure service-linked roles exist for Load Balancer and ECS:
 
 ```
 aws iam get-role --role-name "AWSServiceRoleForElasticLoadBalancing" \
@@ -35,7 +35,7 @@ aws iam get-role --role-name "AWSServiceRoleForECS" \
 || aws iam create-service-linked-role --aws-service-name "ecs.amazonaws.com"
 ```
 
-## Build a VPC, ECS Cluster, and ALB:
+## 5. Build a VPC, ECS Cluster, and ALB:
 ![infrastructure](images/private-subnet-public-lb.png)
 ```
 cd ~/environment/fargate-demo
@@ -48,7 +48,7 @@ availability zones, each with a public and private subnet. The public subnets
 will hold service endpoints, and the private subnets will be where our workloads run.
 Where the image shows an instance, we will have containers on AWS Fargate.
 
-## Set environment variables from our build
+## 6. Set environment variables from our build
 ```
 
 export clustername=$(aws cloudformation describe-stacks --stack-name fargate-demo --query 'Stacks[0].Outputs[?OutputKey==`ClusterName`].OutputValue' --output text)
@@ -73,20 +73,20 @@ $ cd ~/environment
 This creates our infrastructure, and sets several environment variables we will use to
 automate deploys.
 
-## Configure `ecs-cli` to talk to your cluster:
+## 7. Configure `ecs-cli` to talk to your cluster:
 ```
 ecs-cli configure --region $AWS_DEFAULT_REGION --cluster $clustername --default-launch-type FARGATE --config-name fargate-demo
 ```
 We set a default region so we can reference the region when we run our commands.
 
 
-## Authorize traffic:
+## 8. Authorize traffic:
 ```
 aws ec2 authorize-security-group-ingress --group-id "$security_group" --protocol tcp --port 3000 --cidr 0.0.0.0/0
 ```
 We know that our containers talk on port 3000, so authorize that traffic on our security group:
 
-## Deploy our frontend application:
+## 9. Deploy our frontend application:
 ```
 cd ~/environment/ecsdemo-frontend
 envsubst < ecs-params.yml.template >ecs-params.yml
@@ -110,14 +110,14 @@ of Fargate)
 Note: ecs-cli will take care of building our private dns namespace for service discovery,
 and log group in cloudwatch logs.
 
-## View running container:
+## 10. View running container:
 ```
 ecs-cli compose --project-name ecsdemo-frontend service ps \
     --cluster-config fargate-demo
 ```
 We should have one task registered.
 
-## Check reachability (open url in your browser):
+## 11. Check reachability (open url in your browser):
 ```
 alb_url=$(aws cloudformation describe-stacks --stack-name fargate-demo-alb --query 'Stacks[0].Outputs[?OutputKey==`ExternalUrl`].OutputValue' --output text)
 echo "Open $alb_url in your browser"
@@ -125,7 +125,7 @@ echo "Open $alb_url in your browser"
 This command looks up the URL for our ingress ALB, and outputs it. You should 
 be able to click to open, or copy-paste into your browser.
 
-## View logs:
+## 12. View logs:
 ```
 #substitute your task id from the ps command 
 ecs-cli logs --task-id a06a6642-12c5-4006-b1d1-033994580605 \
@@ -134,7 +134,7 @@ ecs-cli logs --task-id a06a6642-12c5-4006-b1d1-033994580605 \
 To view logs, find the task id from the earlier `ps` command, and use it in this
 command. You can follow a task's logs also.
 
-## Scale the tasks:
+## 13. Scale the tasks:
 ```
 ecs-cli compose --project-name ecsdemo-frontend service scale 3 \
     --cluster-config fargate-demo
@@ -144,7 +144,7 @@ ecs-cli compose --project-name ecsdemo-frontend service ps \
 We can see that our containers have now been evenly distributed across all 3 of our
 availability zones.
 
-## Bring up NodeJS backend api:
+## 14. Bring up NodeJS backend api:
 ```
 cd ~/environment/ecsdemo-nodejs
 envsubst <ecs-params.yml.template >ecs-params.yml
@@ -160,7 +160,7 @@ Just like earlier, we are now bringing up one of our backend API services.
 This service is not registered with any ALB, and instead is only reachable by 
 private IP in the VPC, so we will use service discovery to talk to it.
 
-## Scale the tasks:
+## 15. Scale the tasks:
 ```
 ecs-cli compose --project-name ecsdemo-nodejs service scale 3 \
     --cluster-config fargate-demo
@@ -169,7 +169,7 @@ ecs-cli compose --project-name ecsdemo-nodejs service scale 3 \
 We can see that our containers have now been evenly distributed across all 3 of our
 availability zones.
 
-## Bring up Crystal backend api:
+## 16. Bring up Crystal backend api:
 ```
 cd ~/environment/ecsdemo-crystal
 envsubst <ecs-params.yml.template >ecs-params.yml
@@ -185,7 +185,7 @@ Just like earlier, we are now bringing up one of our backend API services.
 This service is not registered with any ALB, and instead is only reachable by 
 private IP in the VPC, so we will use service discovery to talk to it.
 
-## Scale the tasks:
+## 17. Scale the tasks:
 ```
 ecs-cli compose --project-name ecsdemo-crystal service scale 3 \
     --cluster-config fargate-demo
